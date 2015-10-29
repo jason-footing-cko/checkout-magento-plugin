@@ -1,0 +1,15 @@
+
+<script type="text/javascript">
+    $buttonCheckout =  null;
+    if($buttonCheckout = $$('.onestepcheckout-place-order')) {
+        var eventClick = $buttonCheckout[0].readAttribute('onclick');
+        <?php if($this->isSelected()): ?>
+        if(typeof CheckoutIntegration !='undefined' && CheckoutIntegration.hasOwnProperty('render') &&  !CheckoutIntegration.isMobile()) {
+            $buttonCheckout[0].writeAttribute('onclick', 'CheckoutIntegration.open()');
+        }
+        <?php endif; ?>
+        $buttonCheckout[0].writeAttribute('data-clickevent',eventClick);
+
+
+    }
+</script>

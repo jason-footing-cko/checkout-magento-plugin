@@ -1,0 +1,113 @@
+<?php $tokenRersult = $this->getPaymentTokenResult($orderid = null); ?>
+<?php if ($tokenRersult['succes']): ?>
+  <script type="text/javascript">
+    var reload = false;
+    window.CKOConfig = {
+        debugMode: true,
+        renderMode: 2,
+        namespace: 'CheckoutIntegration',
+        publicKey: '<?php echo $this->getPublicKey() ?>',
+        paymentToken: "<?php echo $tokenRersult['token'] ?>",
+        value: '<?php echo $this->getConvertAmount() ?>',
+        currency: '<?php echo $this->getCurrency() ?>',
+        customerEmail: '<?php echo $this->getEmailAddress() ?>',
+        customerName: '<?php echo $this->getName() ?>',
+        paymentMode: 'mixed',
+        title: '<?php echo $this->getStoreName(); ?>',
+        useCurrencyCode: '<?php echo $this->getUseCurrencyCode() ?>',
+        forceMobileRedirect: true,
+        subtitle: '<?php echo $this->__('Please enter your credit card details') ?>',
+        widgetContainerSelector: '.payment-form',
+        styling: {
+            logoUrl: '<?php echo $this->getLightBoxUrl() ?>',
+            themeColor: '<?php echo $this->getThemeColor() ?>',
+            buttonColor: '<?php echo $this->getButtonColor() ?>',
+            iconColor: '<?php echo $this->getIconColor() ?>',
+        },
+        cardCharged: function (event) {
+            document.getElementById('cko-cc-paymenToken').value = event.data.paymentToken;
+            fireEvent($('onestepcheckout-place-order'), 'click');
+
+        },
+        paymentTokenExpired: function () {
+            reload = true;
+        },
+        lightboxActivated: function () {
+
+            if ($('advice-required-bridge-entry-cko-cc-paymenToken')) {
+                $('advice-required-bridge-entry-cko-cc-paymenToken').hide();
+            }
+        },
+        lightboxDeactivated: function () {
+            if (reload) {
+                window.location.reload();
+            }
+        },
+        cardVerificationRequired: function (event) {
+            document.getElementById('cko-3d-redirectUrl').value = event.data.redirectUrl;
+            document.getElementById('cko-cc-paymenToken').value = event.data.paymentToken;
+            fireEvent($('onestepcheckout-place-order'), 'click');
+        },
+        ready: function () {
+            Validation.add('required-bridge-entry', '<?php echo $this->__("Please wait while we load you secure form") ?>', function (value) {
+                var form = new VarienForm('onestepcheckout-form'),
+                        useTitles = form.validator.options.useTitles,
+                        callback = form.validator.options.onElementValidate,
+                        result = true;
+                Form.getElements(form.form).collect(function (elm) {
+                    if (elm.hasClassName('local-validation') && !this.isElementInForm(elm, this.form)) {
+                        return true;
+                    }
+                    if (elm.id != 'cko-cc-paymenToken') {
+                        if (!Validation.validate(elm, {useTitle: useTitles, onElementValidate: callback})) {
+                            result = false;
+                        }
+                    }
+                });
+
+                if ($$('[name="payment\[method\]"]:checked')[0].id == 'p_method_creditcard' && value == -1 && result) {
+                    if (!CheckoutIntegration.isMobile()) {
+                        if (window.CKOConfig.customerEmail == '') {
+                            window.CKOConfig.customerEmail = document.getElementById('billing:email').value;
+                            CheckoutIntegration.configure(window.CKOConfig);
+                        }
+                        CheckoutIntegration.open();
+                    } else {
+                        document.getElementById('cko-cc-redirectUrl').value = CheckoutIntegration.getRedirectionUrl();
+                        return true;
+                    }
+                } else {
+                    return true;
+                }
+                return value == -1 ? false : true;
+            });
+        },
+        lpCharged: function (event) {
+            document.getElementById('cko-cc-paymenToken').value = "<?php echo $tokenRersult['token'] ?>";
+            document.getElementById('cko-lp-redirectUrl').value = event.data.redirectUrl;
+            fireEvent($('onestepcheckout-place-order'), 'click');
+        },
+    };
+    if (typeof CheckoutIntegration != 'undefined' && CheckoutIntegration.hasOwnProperty('render')) {
+        CheckoutIntegration.render(window.CKOConfig);
+    }
+
+
+  </script>
+
+  <div class="payment-form" style="float:left;"></div>
+
+  <?php $_code = $this->getMethodCode() ?>
+  <ul id="payment_form_<?php echo $_code ?>" style="display:none;">
+      <li>
+          <input type="hidden" name="payment[cko_redirectUrl]" id="cko-redirectUrl" value=""  class="input-text "/>
+          <input type="hidden" name="payment[cko_lp_redirectUrl]" id="cko-lp-redirectUrl" value=""  class="input-text "/>
+          <input type="hidden" name="payment[cko_3d_redirectUrl]" id="cko-3d-redirectUrl" value=""  class="input-text "/>
+          <input type="hidden" name="payment[cko_cc_paymenToken]" id="cko-cc-paymenToken" value="-1"  class="input-text required-bridge-entry"/>
+      </li>
+  </ul>
+<?php else: ?>
+  <div style="" id="advice-required-bridge-entry-cko-cc-paymenToken" class="validation-advice">
+      <?php echo $this->__($tokenRersult['message']) ?>
+  </div>
+<?php endif; ?>
