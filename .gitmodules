@@ -1,0 +1,4 @@
+[submodule "lib/CheckoutApi"]
+	path = lib/CheckoutApi
+	url = https://github.com/CKOTech/checkout-php-library.git
+	branch = CheckoutApi
